@@ -1,0 +1,300 @@
+:root {
+    --tile-size: 20px;
+    --grid-size: 20;
+    --canvas-size: calc(var(--tile-size) * var(--grid-size));
+}
+
+body {
+    background-color: #ffffff; /* Beyaz Arka Plan */
+    color: #4a5568;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+}
+
+.game-container {
+    width: var(--canvas-size);
+    max-width: 90vw;
+    position: relative;
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #f7fafc; /* Hafif Gri */
+}
+
+#snakeCanvas {
+    display: block;
+    background-color: #ffffff; /* Oyun alanı için beyaz */
+    border: 1px solid #e2e8f0;
+    width: 100%; /* Mobil uyumluluk için */
+    height: auto;
+}
+
+.info-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 15px;
+    background-color: #1a202c; /* Koyu tema */
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(26, 32, 44, 0.95); /* Koyu Overlay */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #48bb78; /* Yeşil */
+    margin-bottom: 10px;
+}
+
+.sub-title {
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-bottom: 30px;
+    color: #a0aec0;
+}
+
+.game-button {
+    padding: 12px 25px;
+    margin: 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    background-color: #48bb78; /* Yeşil */
+    color: white;
+    border: none;
+    font-size: 1.1rem;
+}
+
+.game-button:hover {
+    background-color: #38a169;
+    transform: translateY(-2px);
+}
+
+.ai-button {
+    background-color: #63b3ed; /* Mavi */
+}
+
+.ai-button:hover {
+    background-color: #4299e1;
+}
+
+.controls-info {
+    margin-top: 30px;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    max-width: 80%;
+}
+
+.name-input-group, .mode-select-group {
+    margin-bottom: 15px;
+    width: 80%;
+    max-width: 300px;
+}
+
+#playerNameInput, #gameModeSelect {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #4a5568;
+    background-color: #2d3748;
+    color: white;
+}
+
+/* --- Mesaj Kutusu --- */
+#messageBox {
+    z-index: 10;
+}
+
+.ai-commentary-box {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #1a202c;
+    border-radius: 6px;
+    font-style: italic;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- HUD Öğeleri --- */
+#hud-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 5px;
+    text-align: right;
+    color: #cbd5e0;
+    font-weight: 700;
+    pointer-events: none; /* Kanvasa tıklamayı engelle */
+}
+
+#dash-bar {
+    width: 100px;
+    height: 10px;
+    background-color: #2d3748;
+    border-radius: 5px;
+    margin-top: 5px;
+    overflow: hidden;
+    border: 1px solid #a0aec0;
+}
+
+#dash-fill {
+    height: 100%;
+    width: 0%;
+    background-color: #f6ad55;
+    transition: width 0.1s linear;
+}
+
+/* --- Pause Ekranı --- */
+#pause-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    z-index: 5;
+    pointer-events: all;
+    border-radius: 12px;
+}
+.hidden {
+    display: none;
+}
+/* --- Mobil Cihazlar için Düzenlemeler --- */
+@media (max-width: 600px) {
+    .title {
+        font-size: 2rem;
+    }
+
+    .sub-title {
+        font-size: 1rem;
+    }
+
+    .game-button {
+        font-size: 1rem;
+        padding: 10px 20px;
+    }
+
+    .controls-info {
+        font-size: 0.9rem;
+    }
+}
+/* --- Karanlık Mod Desteği --- */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1a202c;
+        color: #cbd5e0;
+    }
+
+    .game-container {
+        background-color: #2d3748;
+        box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.7);
+    }
+
+    #snakeCanvas {
+        background-color: #2d3748;
+        border-color: #4a5568;
+    }
+
+    .info-bar {
+        background-color: #2d3748;
+        color: #edf2f7;
+    }
+
+    .menu {
+        background: rgba(26, 32, 44, 0.95);
+        color: #edf2f7;
+    }
+
+    .game-button {
+        background-color: #38a169;
+        color: #edf2f7;
+    }
+
+    .game-button:hover {
+        background-color: #2f855a;
+    }
+
+    .ai-button {
+        background-color: #3182ce;
+    }
+
+    .ai-button:hover {
+        background-color: #2b6cb0;
+    }
+
+    .controls-info {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    #playerNameInput, #gameModeSelect {
+        background-color: #4a5568;
+        color: #edf2f7;
+        border-color: #718096;
+    }
+}
+/* --- Ekstra Stil Düzenlemeleri --- */
+#geminiButton:disabled {
+    background-color: #a0aec0;
+    cursor: not-allowed;
+}
+#geminiButton:disabled:hover {
+    background-color: #a0aec0;
+    transform: none;
+}
+#aiCommentary {
+    font-size: 0.95rem;
+    color: #e2e8f0;
+}
+#aiCommentary.hidden {
+    display: none;
+}
+#messageBox {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(26, 32, 44, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    z-index: 15;
+}
+#messageBox.hidden {
+    display: none;
+}
