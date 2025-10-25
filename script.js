@@ -1,14 +1,11 @@
 // --- FIREBASE TANIMLARI (HTML'DEN GELEN GLOBAL DEĞİŞKENLER) ---
-// Global değişkenler window objesi üzerinden erişilebilir olacak.
-// const firebaseDb = window.firebaseDb; 
-// const currentUserId = window.currentUserId;
-// const __app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// HTML'deki script bloğu, gerekli Firebase nesnelerini (window.firebaseDb, window.currentUserId) 
+// ve App ID'yi (HTML'de tanımlanan proje ID) global olarak ayarlar.
+// Bu dosya bu global nesnelere güvenir.
 
-// Firebase importlarını kullanabilmek için yeni fonksiyon ekleyelim.
 async function getFirestoreFunctions() {
-    // Firestore fonksiyonlarını dinamik olarak yükle (Çevreye bağlı olarak bu global fonksiyonlar mevcut olabilir)
+    // Firestore fonksiyonlarını dinamik olarak yükle (GitHub Pages'ta standart import)
     if (window.firebaseDb && window.firebaseAuth) {
-        // Zaten yüklenmişse veya global olarak erişilebilir ise
         return {
             db: window.firebaseDb,
             auth: window.firebaseAuth,
@@ -18,7 +15,7 @@ async function getFirestoreFunctions() {
         };
     } else {
         // Yükleme bekleniyor veya hata
-        console.warn("Firestore fonksiyonları henüz yüklenmedi. Kayıt işlemi bekletiliyor.");
+        console.warn("Firestore fonksiyonları veya kullanıcı ID'si mevcut değil. Kayıt işlemi bekletiliyor.");
         // Gecikme ile tekrar deneme yapılabilir, ancak burada basitçe null döndürüyoruz.
         return null; 
     }
@@ -27,6 +24,7 @@ async function getFirestoreFunctions() {
 
 
 // --- GEMINI API ENTEGRASYON BÖLÜMÜ ---
+// Koç Yorumu için Gemini API, bu ortam dışında çalışmayabilir.
 const apiKey = ""; 
 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
@@ -34,6 +32,11 @@ const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2
  * Gemini API'yi çağırmak için üstel geri çekilmeyi kullanan yardımcı fonksiyon.
  */
 async function callGeminiAPI(payload, maxRetries = 3) {
+    // GitHub Pages'ta API anahtarı boş olacağı için bu fonksiyon çalışmayacaktır.
+    if (!apiKey) {
+        return { text: "Yapay Zeka Koçu hizmeti, API anahtarı ayarlanmadığı için bu ortamda devre dışıdır.", sources: [] };
+    }
+    
     let lastError = null;
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
@@ -123,7 +126,8 @@ const MIN_GAME_SPEED = 50; // Ulaşılabilecek en yüksek hız (daha küçük ms
 const SPEED_INCREASE_INTERVAL = 50; // Her 50 puanda hızlanma
 // Yiyecek otomatik olarak yeniden çıkma süresi (5 saniye maksimum ömür)
 const FOOD_COOLDOWN_MS = 5000; 
-const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// App ID, HTML'deki Firebase projesinin ID'sinden alınacak.
+const APP_ID = window.firebaseApp?.options?.projectId || 'default-app-id';
 
 // Food Tipleri ve Özellikleri
 const FOOD_TYPES = {
@@ -154,6 +158,8 @@ const pauseScreen = document.getElementById('pause-screen');
 const dashFill = document.getElementById('dash-fill');
 const activePowerupDisplay = document.getElementById('active-powerup');
 const foodTimerDisplay = document.getElementById('foodTimerDisplay'); 
+const mobilePauseButton = document.getElementById('mobilePauseButton'); // YENİ: Mobil Duraklat Butonu
+const mobileControls = document.getElementById('mobile-controls'); // YENİ: Mobil Kontrol Alanı
 
 // Canvas'ı Ayarla
 canvas.width = CANVAS_WIDTH;
@@ -161,7 +167,7 @@ canvas.height = CANVAS_HEIGHT;
 
 // Elma Görseli (Placeholder olarak kalır)
 const appleImage = new Image();
-appleImage.src = "apple.jpg"; 
+appleImage.src = "apple.png"; 
 
 // --- SINIFLAR ---
 
@@ -304,6 +310,7 @@ class Game {
         gameInfo.style.display = 'none';
         pauseScreen.style.display = 'none'; 
         messageBox.style.display = 'none'; 
+        mobileControls.style.display = 'none'; // Mobil kontrolleri gizle
         
         // Oyun döngüsü çalışıyorsa durdur
         if (this.animationFrameId) {
@@ -336,11 +343,13 @@ class Game {
         gameInfo.style.display = 'flex';
         messageBox.style.display = 'none';
         pauseScreen.style.display = 'none';
+        mobileControls.style.display = 'flex'; // Mobil kontrolleri göster (CSS media query ile kontrol edilecek)
         aiCommentary.textContent = '';
-        geminiButton.disabled = false;
+        // API anahtarı yoksa düğmeyi devre dışı bırak
+        geminiButton.disabled = !apiKey; 
         activePowerupDisplay.textContent = '';
         // Başlangıç değerini 5.0 saniye olarak göster
-        foodTimerDisplay.textContent = `Yem Süresi: ${(FOOD_COOLDOWN_MS / 1000).toFixed(1)}s`; 
+        foodTimerDisplay.textContent = `Yem Süresi: ${(FOOD_COOLDOWN_MS / 1000).toFixed(1)}s`;
         
         // Ses
         if (audioCtx.state === 'suspended') {
@@ -363,11 +372,14 @@ class Game {
         this.isPaused = !this.isPaused;
         if (this.isPaused) {
             pauseScreen.style.display = 'flex'; 
+            mobilePauseButton.textContent = 'DEVAM ET';
             playTone(180, 0.1, 'sawtooth');
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null; 
+            this.lastPauseTime = performance.now();
         } else {
             pauseScreen.style.display = 'none'; 
+            mobilePauseButton.textContent = 'DURAKLAT';
             // Devam ettiğinde zamanlamayı düzeltmek için lastUpdate'i sıfırla
             this.lastUpdate = performance.now(); 
             // Pause süresini nextFoodTime'a ekleyelim.
@@ -378,10 +390,6 @@ class Game {
             if (!this.animationFrameId) {
                  this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this));
             }
-        }
-        
-        if (this.isPaused) {
-             this.lastPauseTime = performance.now();
         }
     }
 
@@ -594,7 +602,8 @@ class Game {
         messageText.textContent = `${this.playerName}, Muhteşem Puanınız: ${this.score}. En Yüksek: ${this.highScore}`;
         
         messageBox.style.display = 'flex'; // Game Over ekranını göster
-        geminiButton.disabled = false; // Koç butonunu aktifleştir
+        geminiButton.disabled = !apiKey; // API anahtarı yoksa düğmeyi devre dışı bırak
+        mobileControls.style.display = 'none'; // Mobil kontrolleri gizle
         
         cancelAnimationFrame(this.animationFrameId);
         this.animationFrameId = null;
@@ -608,16 +617,18 @@ class Game {
      */
     async recordScore() {
         if (this.score <= 0) return; // Negatif veya sıfır skorları kaydetme
-
+        
         try {
             const fns = await getFirestoreFunctions();
-            if (!fns) {
-                console.error("Firestore fonksiyonları mevcut değil. Skor kaydedilemedi.");
+            // Firebase DB objesi varsa devam et
+            if (!fns || !fns.db || !window.currentUserId) {
+                console.error("Firestore fonksiyonları veya kullanıcı ID'si mevcut değil. Skor kaydedilemedi.");
                 return;
             }
 
             const { db, collection, addDoc, serverTimestamp } = fns;
             
+            // HTML'den global olarak tanımlanan APP_ID ve currentUserId kullanılır.
             const collectionPath = `/artifacts/${APP_ID}/public/data/snake_leaderboard`; 
             
             await addDoc(collection(db, collectionPath), {
@@ -630,6 +641,7 @@ class Game {
             console.log("Skor başarıyla Firestore'a kaydedildi:", this.score);
         } catch (error) {
             console.error("Skor Firestore'a kaydedilirken hata oluştu:", error);
+            // Kullanıcıya görünür bir hata mesajı vermek için buraya bir UI kodu eklenebilir.
         }
     }
 
@@ -739,6 +751,48 @@ restartButtonInGame.addEventListener('click', () => {
     }
 });
 geminiButton.addEventListener('click', () => generateCommentary(game.score, game.highScore, game.playerName));
+mobilePauseButton.addEventListener('click', () => game.togglePause()); // YENİ: Mobil Pause
+
+// --- MOBİL BUTON KONTROLLERİ ---
+const btnUp = document.getElementById('btn-up');
+const btnDown = document.getElementById('btn-down');
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+const btnDash = document.getElementById('btn-dash');
+
+// Yön butonlarına tıklama (veya dokunma) olaylarını ekle
+btnUp.addEventListener('click', () => {
+    if (game.isRunning && !game.isPaused) game.snake.changeDirection(0, -TILE_SIZE);
+});
+btnDown.addEventListener('click', () => {
+    if (game.isRunning && !game.isPaused) game.snake.changeDirection(0, TILE_SIZE);
+});
+btnLeft.addEventListener('click', () => {
+    if (game.isRunning && !game.isPaused) game.snake.changeDirection(-TILE_SIZE, 0);
+});
+btnRight.addEventListener('click', () => {
+    if (game.isRunning && !game.isPaused) game.snake.changeDirection(TILE_SIZE, 0);
+});
+
+// Dash butonuna basma/bırakma olaylarını ekle
+btnDash.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Varsayılan davranışı engelle (kaydırma vb.)
+    if (game.isRunning && !game.isPaused) game.isDashing = true;
+}, { passive: false }); // Passive: false, preventDefault'un çalışması için önemli
+btnDash.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (game.isRunning && !game.isPaused) game.isDashing = false;
+}, { passive: false });
+
+// Masaüstü testleri için mouse olaylarını da ekleyelim
+btnDash.addEventListener('mousedown', () => {
+    if (game.isRunning && !game.isPaused) game.isDashing = true;
+});
+btnDash.addEventListener('mouseup', () => {
+    if (game.isRunning && !game.isPaused) game.isDashing = false;
+});
+// --- MOBİL BUTON KONTROLLERİ SONU ---
+
 
 // Klavye Girişi Yönetimi
 document.addEventListener('keydown', (e) => {
@@ -808,53 +862,19 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-// --- MOBİL (TOUCH) KONTROLLER ---
-
+// --- MOBİL (TOUCH) KONTROLLER (Canvas üzerindeki eski kaydırmayı devre dışı bırakıyoruz) ---
+// Not: Artık butonlar olduğu için canvas üzerindeki kaydırma hareketlerini kullanmaya gerek yok.
 canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if (!game.isRunning || game.isPaused) return;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-});
-
-canvas.addEventListener('touchend', (e) => {
-    if (!game.isRunning || game.isPaused) return;
-    // Tek dokunuş Dash olabilir, ancak burada basit kaydırma hareketine odaklanalım.
-});
+    e.preventDefault(); // Varsayılan kaydırma davranışını tamamen engelle
+}, { passive: false }); 
 
 canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
-    if (!game.isRunning || game.isPaused || e.touches.length === 0) return;
-    
-    const touchEndX = e.touches[0].clientX;
-    const touchEndY = e.touches[0].clientY;
-    
-    const dx = touchEndX - touchStartX;
-    const dy = touchEndY - touchStartY;
-    
-    // Kaydırma Eşiği (Minimum 10 piksel)
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-        let newDx = game.snake.dx;
-        let newDy = game.snake.dy;
-        
-        if (Math.abs(dx) > Math.abs(dy)) {
-            // Yatay hareket
-            newDx = (dx > 0) ? TILE_SIZE : -TILE_SIZE;
-            newDy = 0;
-        } else {
-            // Dikey hareket
-            newDx = 0;
-            newDy = (dy > 0) ? TILE_SIZE : -TILE_SIZE;
-            
-        }
-        
-        game.snake.changeDirection(newDx, newDy);
-        
-        // Yeni başlangıç noktası olarak bu noktayı al, böylece tek bir kaydırma bir kez yön değiştirir
-        touchStartX = touchEndX;
-        touchStartY = touchEndY;
-    }
-});
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+}, { passive: false });
 
 
 // --- OYUN BAŞLANGICI ---
@@ -868,4 +888,3 @@ appleImage.onload = () => {
 if (!appleImage.complete) {
     game.draw(0, 0);
 }
-// --- FIREBASE TANIMLARI ---
