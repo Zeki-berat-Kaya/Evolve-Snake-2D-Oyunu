@@ -30,7 +30,7 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Dikeyde başlangıca hizala */
             padding: 20px;
         }
 
@@ -40,6 +40,9 @@
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
             border-radius: 12px;
             overflow: hidden;
+            /* Inline style'ı burada geçersiz kılmak için */
+            width: 400px; 
+            height: 400px;
         }
         
         /* Canvas Stili */
@@ -127,41 +130,7 @@
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
         }
         
-        /* Mobil uyumluluk */
-        @media (max-width: 768px) {
-            #main-layout {
-                flex-direction: column;
-                align-items: center;
-            }
-            #leaderboard {
-                width: 100%;
-                margin-top: 20px;
-            }
-            
-            /* Mobil Kontrol Alanı: Masaüstünde gizle, mobilde göster */
-            #mobile-controls {
-                display: flex; /* Mobilde göster */
-                padding: 10px;
-            }
-            #game-container {
-                width: 100% !important;
-                max-width: 400px; /* Maksimum genişlik sınırını koru */
-                height: auto !important;
-            }
-            #snakeCanvas {
-                width: 100%;
-                height: auto;
-            }
-        }
-
-        /* Masaüstünde mobil kontrol panelini gizle */
-        @media (min-width: 769px) {
-            #mobile-controls {
-                display: none;
-            }
-        }
-
-        /* Mobil butonlar için özel stil */
+        /* Mobil Buton Stilleri */
         .control-button {
             width: 50px;
             height: 50px;
@@ -182,6 +151,85 @@
             box-shadow: 0 0 #1a202c;
             transform: translateY(4px);
         }
+
+        /* --- MOBİL UYUMLULUK BAŞLANGIÇ --- */
+        @media (max-width: 768px) {
+            /* Body Padding'i azalt */
+            body {
+                padding: 10px 5px; 
+            }
+            
+            #main-layout {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            /* Liderlik tablosu genişliğini artır */
+            #leaderboard {
+                width: 95%;
+                margin-top: 20px;
+            }
+            
+            /* Oyun Çevresi Konteyneri (Mobil ekran genişliğine sığdır) */
+            .max-w-md.w-full {
+                width: 95%;
+                padding: 10px;
+            }
+
+            /* Canvas ve Oyun Konteyneri: Ekran genişliğine göre dinamik boyut */
+            #game-container {
+                /* Inline width/height 400px değerlerini geçersiz kılmak için */
+                width: 98% !important; 
+                /* 16:9'a benzer bir oran için 98vw de kullanılabilir, ancak w-full ile devam edelim */
+                max-width: 400px;
+                height: auto; 
+                /* Square canvas'ı korumak için JS tarafında dinamik boyutlandırma yapılabilir. */
+            }
+            #snakeCanvas {
+                width: 100%;
+                height: 100%;
+            }
+            
+            /* Mobil Kontrol Alanı: Göster ve Konumlandır */
+            #mobile-controls {
+                display: flex !important; /* Mobilde göster */
+                padding: 10px;
+                /* İsteğe bağlı: Butonları ekranın altına sabitle */
+                /* position: sticky; 
+                bottom: 0;
+                background-color: #1a202c;
+                z-index: 50; */
+            }
+
+            /* D-Pad Boyutunu Küçük Ekranlarda Azalt (Çok küçük telefonlar için) */
+            #dpad {
+                 width: 120px;
+                 height: 120px;
+            }
+            .control-button {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            #btn-dash {
+                 width: 60px;
+                 height: 60px;
+            }
+            
+            /* D-Pad'deki ikonların pozisyonlarını düzelt */
+             #btn-up { top: 0; }
+             #btn-left { left: 0; }
+             #btn-right { right: 0; }
+             #btn-down { bottom: 0; }
+        }
+
+        /* Masaüstünde mobil kontrol panelini gizle */
+        @media (min-width: 769px) {
+            #mobile-controls {
+                display: none;
+            }
+        }
+        /* --- MOBİL UYUMLULUK SONU --- */
     </style>
 </head>
 <body>
@@ -192,7 +240,7 @@
             <h1 class="text-3xl font-bold mb-6 text-center text-snake-green">Evolve Snake 2D</h1>
 
             <!-- Oyun Kontayneri -->
-            <div id="game-container" class="mx-auto" style="width: 400px; height: 400px;">
+            <div id="game-container" class="mx-auto">
                 <canvas id="snakeCanvas"></canvas>
 
                 <!-- 1. BAŞLANGIÇ MENÜSÜ -->
@@ -221,6 +269,7 @@
                             <p class="text-xs">Hareket: Ok Tuşları, W/A/S/D</p>
                             <p class="text-xs">Hızlanma (Dash): <span class="font-bold text-yellow-400">BOŞLUK</span></p>
                             <p class="text-xs">Duraklat/Devam Et: <span class="font-bold text-yellow-400">P</span></p>
+                            <p class="text-xs font-bold mt-1 text-yellow-400">Mobil: Ekrandaki Tuşları Kullanın!</p>
                         </div>
                         
                         <!-- Kullanıcı ID Bilgisi -->
