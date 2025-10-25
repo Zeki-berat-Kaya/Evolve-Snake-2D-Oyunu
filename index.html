@@ -137,8 +137,51 @@
                 width: 100%;
                 margin-top: 20px;
             }
+            
+            /* Mobil Kontrol Alanı: Masaüstünde gizle, mobilde göster */
+            #mobile-controls {
+                display: flex; /* Mobilde göster */
+                padding: 10px;
+            }
+            #game-container {
+                width: 100% !important;
+                max-width: 400px; /* Maksimum genişlik sınırını koru */
+                height: auto !important;
+            }
+            #snakeCanvas {
+                width: 100%;
+                height: auto;
+            }
         }
 
+        /* Masaüstünde mobil kontrol panelini gizle */
+        @media (min-width: 769px) {
+            #mobile-controls {
+                display: none;
+            }
+        }
+
+        /* Mobil butonlar için özel stil */
+        .control-button {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #2d3748; /* Koyu gri */
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            box-shadow: 0 4px #1a202c;
+            transition: all 0.1s;
+            user-select: none; /* Metin seçimini engelle */
+            touch-action: manipulation; /* Gecikmeyi azalt */
+        }
+        .control-button:active {
+            box-shadow: 0 0 #1a202c;
+            transform: translateY(4px);
+        }
     </style>
 </head>
 <body>
@@ -232,6 +275,11 @@
                             class="btn-primary px-3 py-1 text-xs bg-red-600 text-white font-semibold rounded-full hover:bg-red-700">
                         YENİDEN BAŞLAT
                     </button>
+                    <!-- Mobil Pause Butonu -->
+                    <button id="mobilePauseButton"
+                            class="btn-primary px-3 py-1 text-xs bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 ml-2">
+                        DURAKLAT
+                    </button>
                 </div>
 
                 <!-- Orta: Skorlar -->
@@ -249,6 +297,32 @@
                     </div>
                 </div>
             </div>
+
+            <!-- MOBİL KONTROL PANELİ (SADECE MOBİLDE GÖRÜNÜR) -->
+            <div id="mobile-controls" class="mt-6 flex justify-between items-center hidden w-full">
+                
+                <!-- Sol: D-Pad -->
+                <div id="dpad" class="relative w-[150px] h-[150px] mr-4">
+                    <!-- Yukarı -->
+                    <button id="btn-up" class="control-button absolute top-0 left-1/2 -translate-x-1/2">↑</button>
+                    <!-- Sol -->
+                    <button id="btn-left" class="control-button absolute top-1/2 left-0 -translate-y-1/2">←</button>
+                    <!-- Orta Boş Alan (Opsiyonel) -->
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50px] h-[50px] bg-gray-600 rounded-lg"></div>
+                    <!-- Sağ -->
+                    <button id="btn-right" class="control-button absolute top-1/2 right-0 -translate-y-1/2">→</button>
+                    <!-- Aşağı -->
+                    <button id="btn-down" class="control-button absolute bottom-0 left-1/2 -translate-x-1/2">↓</button>
+                </div>
+                
+                <!-- Sağ: Dash Butonu -->
+                <div class="flex items-center justify-center h-[150px]">
+                    <button id="btn-dash" class="control-button w-[70px] h-[70px] text-yellow-400 bg-red-700 hover:bg-red-600 text-lg">
+                        DASH
+                    </button>
+                </div>
+            </div>
+
         </div>
         <!-- SOL KISIM SONU -->
 
@@ -267,32 +341,40 @@
     <!-- Script Yüklemesi -->
     <script type="module" src="script.js"></script>
     
-    <!-- FIREBASE İMPORTLARI -->
+    <!-- FIREBASE İMPORTLARI VE BAŞLATMA LOGİĞİ (GitHub Pages için Uyarlandı) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, updateDoc, doc, setDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Firestore için hata ayıklama seviyesini ayarla
         setLogLevel('Debug');
         
-        // Global değişkenler tanımlanmalı (Canvas tarafından sağlanır)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // --- GÜVENLİK UYARISI: BU ALANA KENDİ FIREBASE AYARLARINIZI YAPIŞTIRIN! ---
+        // Bu anahtarlar genel anahtarlardır, ancak Firestore Kurallarınızın SIKI olduğundan emin olun.
+        const myFirebaseConfig = {
+            apiKey: "SİZİN_API_KEY_BURAYA", 
+            authDomain: "SİZİN_PROJE_ADI.firebaseapp.com",
+            projectId: "SİZİN_PROJE_ADI",
+            // Diğer alanlar (storageBucket, messagingSenderId, vb.) zorunlu değildir.
+        };
+        const firebaseConfig = myFirebaseConfig;
+        
+        // Proje ID'sini App ID olarak kullanıyoruz.
+        const appId = firebaseConfig.projectId; 
 
         let app, db, auth;
         let userId = null;
 
         try {
             // 1. Firebase'i Başlat
-            if (Object.keys(firebaseConfig).length > 0) {
+            if (appId && Object.keys(firebaseConfig).length > 0) {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
             } else {
-                console.error("Firebase yapılandırması eksik.");
+                console.error("Firebase yapılandırması eksik veya yanlış.");
                 return;
             }
 
@@ -301,38 +383,20 @@
             window.firebaseDb = db;
             window.firebaseAuth = auth;
 
-            // 2. Kimlik Doğrulama
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                } else {
-                    // Kullanıcı oturumu yoksa anonim olarak oturum açmayı dene
-                    if (initialAuthToken) {
-                         // Özel token ile oturum aç
-                         await signInWithCustomToken(auth, initialAuthToken).catch(e => {
-                            console.error("Özel Token ile oturum açma hatası:", e);
-                            signInAnonymously(auth).catch(e => console.error("Anonim oturum açma hatası:", e));
-                         });
-                    } else {
-                        // Token yoksa anonim oturum aç
-                        await signInAnonymously(auth).catch(e => console.error("Anonim oturum açma hatası:", e));
-                    }
-                    // Kullanıcı hala yoksa rastgele ID kullan (aslında onAuthStateChanged yeniden tetiklenmeli)
-                }
-
-                if (auth.currentUser) {
-                    userId = auth.currentUser.uid;
-                    document.getElementById('userIdDisplay').textContent = userId;
-                } else {
-                    // Güvenlik yedeği olarak rastgele ID
-                    userId = crypto.randomUUID(); 
-                    document.getElementById('userIdDisplay').textContent = "Anonim";
-                }
-                
+            // 2. Kimlik Doğrulama: Anonim Oturum Açma
+            signInAnonymously(auth).then((userCredential) => {
+                userId = userCredential.user.uid;
+                document.getElementById('userIdDisplay').textContent = userId;
                 window.currentUserId = userId; // Global olarak erişilebilir yap
-
-                // 3. Liderlik Tablosunu Yükle (Auth tamamlandıktan sonra)
                 loadLeaderboard(db, appId);
+            }).catch(e => {
+                console.error("Anonim oturum açma hatası:", e);
+                // Hata durumunda rastgele ID kullan (Liderlik tablosuna kayıt yapamaz)
+                userId = `Anonim_${crypto.randomUUID().substring(0, 8)}`; 
+                document.getElementById('userIdDisplay').textContent = userId;
+                window.currentUserId = userId;
+                // Yine de liderlik tablosunu yüklemeyi dene (sadece okuma)
+                loadLeaderboard(db, appId); 
             });
 
         } catch (error) {
@@ -342,15 +406,13 @@
         // Liderlik Tablosu Yükleme Fonksiyonu
         function loadLeaderboard(db, appId) {
             const leaderboardList = document.getElementById('leaderboard-list');
-            const leaderboardLoading = document.getElementById('leaderboard-loading');
             
-            // Tüm kullanıcıların görebileceği public koleksiyon yolu
+            // Tüm kullanıcıların görebileceği public koleksiyon yolu (GitHub pages'ta App ID'si projenin ID'sidir)
             const collectionPath = `/artifacts/${appId}/public/data/snake_leaderboard`; 
             
             // Skora göre azalan sırada ilk 10 kaydı sorgula
             const q = query(
                 collection(db, collectionPath),
-                // orderBy("score", "desc") KOMUTU KALDIRILDI - Firestore index hatasını önlemek için
                 limit(10)
             );
 
@@ -373,7 +435,9 @@
 
                 scores.forEach((data, index) => {
                     const rank = index + 1;
-                    const isCurrentUser = data.userId === window.currentUserId;
+                    // userId'nin string olarak ayarlandığından emin ol
+                    const currentUserId = window.currentUserId || ''; 
+                    const isCurrentUser = data.userId === currentUserId;
                     
                     const scoreElement = `
                         <div class="flex justify-between items-center p-3 rounded-lg ${isCurrentUser ? 'bg-yellow-800 border-2 border-yellow-400' : 'bg-gray-700'}">
@@ -388,7 +452,7 @@
                 });
             }, (error) => {
                 console.error("Liderlik tablosu yüklenirken hata:", error);
-                leaderboardList.innerHTML = '<p class="text-red-400 text-center">Skorlar yüklenemedi.</p>';
+                leaderboardList.innerHTML = '<p class="text-red-400 text-center">Skorlar yüklenemedi. (Kuralları kontrol edin)</p>';
             });
         }
     </script>
