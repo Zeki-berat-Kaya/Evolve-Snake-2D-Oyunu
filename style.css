@@ -189,113 +189,24 @@ body {
     pointer-events: all;
     border-radius: 12px;
 }
-.hidden {
+#pause-screen.hidden {
     display: none;
 }
-/* --- Mobil Cihazlar için Düzenlemeler --- */
+/* --- Responsive Tasarım --- */
 @media (max-width: 600px) {
     .title {
         font-size: 2rem;
-    }
-
-    .sub-title {
-        font-size: 1rem;
     }
 
     .game-button {
         font-size: 1rem;
         padding: 10px 20px;
     }
-
-    .controls-info {
+}
+@media (max-width: 400px) {
+    .info-bar {
+        flex-direction: column;
+        align-items: center;
         font-size: 0.9rem;
     }
 }
-/* --- Karanlık Mod Desteği --- */
-@media (prefers-color-scheme: dark) {
-    body {
-        background-color: #1a202c;
-        color: #cbd5e0;
-    }
-
-    .game-container {
-        background-color: #2d3748;
-        box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.7);
-    }
-
-    #snakeCanvas {
-        background-color: #2d3748;
-        border-color: #4a5568;
-    }
-
-    .info-bar {
-        background-color: #2d3748;
-        color: #edf2f7;
-    }
-
-    .menu {
-        background: rgba(26, 32, 44, 0.95);
-        color: #edf2f7;
-    }
-
-    .game-button {
-        background-color: #38a169;
-        color: #edf2f7;
-    }
-
-    .game-button:hover {
-        background-color: #2f855a;
-    }
-
-    .ai-button {
-        background-color: #3182ce;
-    }
-
-    .ai-button:hover {
-        background-color: #2b6cb0;
-    }
-
-    .controls-info {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    #playerNameInput, #gameModeSelect {
-        background-color: #4a5568;
-        color: #edf2f7;
-        border-color: #718096;
-    }
-}
-/* --- Ekstra Stil Düzenlemeleri --- */
-#geminiButton:disabled {
-    background-color: #a0aec0;
-    cursor: not-allowed;
-}
-#geminiButton:disabled:hover {
-    background-color: #a0aec0;
-    transform: none;
-}
-#aiCommentary {
-    font-size: 0.95rem;
-    color: #e2e8f0;
-}
-#aiCommentary.hidden {
-    display: none;
-}
-#messageBox {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(26, 32, 44, 0.9);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    z-index: 15;
-}
-#messageBox.hidden {
-    display: none;
-}
-
